@@ -42,6 +42,7 @@ def EssentialMatrixFromFundamentalMatrix(F, K):
     """
     E = np.matmul(np.matmul(np.transpose(K), F), K)
     U, _, V_T = np.linalg.svd(E)
+    # The first two sigular values of E are equal. The third one is 0.
     S = np.array([
         [1, 0, 0],
         [0, 1, 0],
@@ -52,7 +53,7 @@ def EssentialMatrixFromFundamentalMatrix(F, K):
 
 
 def LinearTriangulation(K, R2, C2, x1, x2):
-    """Estimate the location of 3D points.
+    """Estimate the location of 3D points. The cross product of x and P*X is 0.
 
     Args:
         K: shape (3, 3) array. Instrinsic parameter.
@@ -125,8 +126,8 @@ def RegisterImage(X, x3, K):
     N = X.shape[0]
     A = np.zeros((2*N, 12))
     X_hm = np.concatenate((X, np.ones((N, 1))), axis=1)
-    x_mul_X = np.tile(np.expand_dims(x3[:, 0], axis=1), (1, 4)) * X_hm
-    y_mul_X = np.tile(np.expand_dims(x3[:, 1], axis=1), (1, 4)) * X_hm
+    x_mul_X = np.expand_dims(x3[:, 0], axis=1) * X_hm
+    y_mul_X = np.expand_dims(x3[:, 1], axis=1) * X_hm
     A[:N, 4:8] = -X_hm
     A[:N, 8:] = y_mul_X
     A[N:, :4] = X_hm
@@ -174,13 +175,13 @@ def ReprojectToImage(X, K, R2, C2, R3, C3):
     """
     N = np.shape(X)[0]
     x1p_hm = np.transpose(np.matmul(K, np.transpose(X)))
-    x1p = x1p_hm[:, :2] / np.tile(np.expand_dims(x1p_hm[:, 2], axis=1), (1, 2))
-    X_minus_C = np.transpose(X) - np.tile(C2, (1, N))
+    x1p = x1p_hm[:, :2] / np.expand_dims(x1p_hm[:, 2], axis=1)  # (N, 2) / (N, 1) where the denominator will be broadcasded to (N, 2)
+    X_minus_C = np.transpose(X) - C2
     x2p_hm = np.transpose(np.matmul(np.matmul(K, R2), X_minus_C))
-    x2p = x2p_hm[:, :2] / np.tile(np.expand_dims(x2p_hm[:, 2], axis=1), (1, 2))
-    X_minus_C = np.transpose(X) - np.tile(C3, (1, N))
+    x2p = x2p_hm[:, :2] / np.expand_dims(x2p_hm[:, 2], axis=1)
+    X_minus_C = np.transpose(X) - C3
     x3p_hm = np.transpose(np.matmul(np.matmul(K, R3), X_minus_C))
-    x3p = x3p_hm[:, :2] / np.tile(np.expand_dims(x3p_hm[:, 2], axis=1), (1, 2))
+    x3p = x3p_hm[:, :2] / np.expand_dims(x3p_hm[:, 2], axis=1)
 
     # Use opencv to test this function. 
     # rvec1 = cv2.Rodrigues(np.eye(3))[0]
